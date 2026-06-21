@@ -38,7 +38,7 @@ Follow these steps to run the project locally on your machine:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/ai-career-chatbot.git
+   git clone https://github.com/jayantbharadva-dot/AI-Carrer-Chatbot.git
    ```
 
 2. **Navigate to the project directory**
@@ -115,4 +115,5 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ---
 
-<p align="center">Made with ❤️ by Jayant Bharadva</p>
+<p align="center">Made with 
+   by Jayant Bharadva</p>
