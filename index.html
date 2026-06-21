@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Career Guidance Chatbot</title>
+<!-- Font Awesome Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ============================================================
+   RESET & ROOT VARIABLES
+   ============================================================ */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --primary:       #10a37f;
+  --primary-dark:  #0d8764;
+  --primary-light: #e1f5ee;
+  --bg:            #f7f7f8;
+  --surface:       #ffffff;
+  --border:        #e5e7eb;
+  --text:          #111827;
+  --text-muted:    #6b7280;
+  --user-bg:       #10a37f;
+  --bot-bg:        #ffffff;
+  --sidebar-w:     260px;
+  --header-h:      60px;
+  --radius:        12px;
+  --shadow:        0 1px 4px rgba(0,0,0,.08);
+  font-family: 'Inter', sans-serif;
+  color-scheme: light dark;
+}
+body.dark {
+  --bg:         #1a1a2e;
+  --surface:    #16213e;
+  --border:     #2d3748;
+  --text:       #f1f5f9;
+  --text-muted: #94a3b8;
+  --bot-bg:     #1e293b;
+}
+
+/* ============================================================
+   APP SHELL
+   ============================================================ */
+body { background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-rows: var(--header-h) 1fr;
+  height: 100vh;
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  -webkit-app-region: drag; /* drag window on macOS */
+}
+.header-logo {
+  display: flex; align-items: center; gap: 10px;
+  -webkit-app-region: no-drag;
+}
+.logo-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.logo-text { font-size: 16px; font-weight: 700; color: var(--text); }
+.logo-sub  { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+.header-actions {
+  display: flex; gap: 8px;
+  -webkit-app-region: no-drag;
+}
+.h-btn {
+  width: 34px; height: 34px; border-radius: 8px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text-muted); cursor: pointer; font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.h-btn:hover { background: var(--bg); color: var(--text); }
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.sidebar-header {
+  padding: 16px; font-size: 12px; font-weight: 600;
+  color: var(--text-muted); letter-spacing: .05em;
+  text-transform: uppercase; border-bottom: 1px solid var(--border);
+}
+.career-list { flex: 1; overflow-y: auto; padding: 8px; }
+.career-list::-webkit-scrollbar { width: 4px; }
+.career-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.career-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 8px;
+  cursor: pointer; transition: background .15s;
+  margin-bottom: 2px;
+}
+.career-item:hover { background: var(--bg); }
+.career-item.active { background: var(--primary-light); }
+.career-emoji { font-size: 18px; flex-shrink: 0; }
+.career-info { flex: 1; min-width: 0; }
+.career-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.career-salary { font-size: 11px; color: var(--text-muted); }
+
+.sidebar-footer {
+  padding: 12px; border-top: 1px solid var(--border);
+}
+.restart-btn {
+  width: 100%; padding: 9px; border-radius: 8px;
+  background: var(--primary); color: #fff; border: none;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: background .15s;
+}
+.restart-btn:hover { background: var(--primary-dark); }
+
+/* ============================================================
+   MAIN CHAT AREA
+   ============================================================ */
+.chat-area {
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--bg);
+}
+
+/* ---- Messages ---- */
+.messages {
+  flex: 1; overflow-y: auto;
+  padding: 24px; display: flex; flex-direction: column; gap: 16px;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+.messages::-webkit-scrollbar { width: 5px; }
+.messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.msg-row { display: flex; gap: 10px; align-items: flex-end; }
+.msg-row.user { flex-direction: row-reverse; }
+
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0;
+}
+.bot-av  { background: var(--primary-light); color: var(--primary); }
+.user-av { background: var(--primary); color: #fff; }
+
+.bubble-wrap { display: flex; flex-direction: column; max-width: 68%; }
+.msg-row.user .bubble-wrap { align-items: flex-end; }
+
+.bubble {
+  padding: 11px 15px; border-radius: 16px;
+  font-size: 14px; line-height: 1.6; word-break: break-word;
+}
+.bot-bubble  { background: var(--bot-bg); border: 1px solid var(--border); border-top-left-radius: 4px; color: var(--text); }
+.user-bubble { background: var(--user-bg); color: #fff; border-top-right-radius: 4px; }
+
+.bubble b { font-weight: 600; }
+.bubble ul { margin-left: 16px; margin-top: 4px; }
+.bubble li { margin-bottom: 2px; }
+
+.msg-time { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
+.msg-row.user .msg-time { text-align: right; }
+
+/* Typing animation */
+.typing-bubble { display: flex; gap: 5px; padding: 14px 16px; }
+.typing-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted);
+  animation: typeBounce 1.2s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: .2s; }
+.typing-dot:nth-child(3) { animation-delay: .4s; }
+@keyframes typeBounce {
+  0%,60%,100% { transform: translateY(0); opacity:.4; }
+  30% { transform: translateY(-8px); opacity:1; }
+}
+
+/* Quick replies */
+.quick-replies { display: flex; flex-wrap: wrap; gap: 8px; padding-left: 42px; }
+.qr-btn {
+  padding: 7px 14px; border-radius: 20px;
+  border: 1.5px solid var(--primary); background: transparent;
+  color: var(--primary); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all .15s; font-family: inherit;
+}
+.qr-btn:hover { background: var(--primary); color: #fff; }
+
+/* Career detail panel (inline) */
+.career-detail-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-top: 4px;
+  max-width: 500px;
+}
+.career-detail-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.salary-pill {
+  display: inline-block; padding: 4px 12px; border-radius: 20px;
+  background: var(--primary); color: #fff; font-size: 12px; font-weight: 600;
+  margin-bottom: 10px;
+}
+.detail-section { margin-bottom: 10px; }
+.detail-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+.tag-wrap { display: flex; flex-wrap: wrap; gap: 5px; }
+.skill-tag {
+  padding: 3px 10px; border-radius: 20px;
+  background: var(--primary-light); color: var(--primary);
+  font-size: 12px; font-weight: 500;
+}
+.roadmap-step { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 6px; }
+.step-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--primary); color: #fff;
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.step-text { font-size: 13px; color: var(--text); line-height: 1.5; }
+
+/* Score bar */
+.score-wrap { margin-top: 4px; }
+.score-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 3px; }
+.score-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width 1s ease; width: 0; }
+.score-label { font-size: 12px; color: var(--primary); font-weight: 600; }
+
+/* ---- Input bar ---- */
+.input-area {
+  padding: 16px 24px;
+  background: var(--surface); border-top: 1px solid var(--border);
+}
+.input-form { display: flex; gap: 10px; align-items: center; max-width: 800px; margin: 0 auto; }
+.chat-input {
+  flex: 1; height: 44px; padding: 0 16px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 22px; font-size: 14px; color: var(--text);
+  font-family: inherit; outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.chat-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(16,163,127,.1); }
+.chat-input::placeholder { color: var(--text-muted); }
+.send-btn {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--primary); border: none; color: #fff;
+  font-size: 16px; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, transform .1s;
+}
+.send-btn:hover { background: var(--primary-dark); }
+.send-btn:active { transform: scale(.95); }
+.send-btn:disabled { background: var(--border); cursor: not-allowed; }
+.input-hint { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 6px; }
+
+/* ============================================================
+   CAREER DETAIL SIDE PANEL (right panel on click)
+   ============================================================ */
+.detail-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.35);
+  z-index: 100; display: none; align-items: center; justify-content: center;
+}
+.detail-overlay.open { display: flex; }
+.detail-panel {
+  background: var(--surface); border-radius: 16px;
+  width: 460px; max-height: 80vh; overflow-y: auto;
+  padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  position: relative;
+}
+.detail-panel::-webkit-scrollbar { width: 4px; }
+.detail-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.close-panel {
+  position: absolute; top: 16px; right: 16px;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--bg); border: 1px solid var(--border);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: var(--text-muted);
+}
+.close-panel:hover { color: var(--text); }
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeSlideUp {
+  from { opacity:0; transform: translateY(10px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.msg-row, .quick-replies { animation: fadeSlideUp .25s ease; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 640px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="header-logo">
+      <div class="logo-icon"><i class="fa-solid fa-brain"></i></div>
+      <div>
+        <div class="logo-text">Career Guidance AI</div>
+        <div class="logo-sub">Desktop Edition — No Python Needed</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="h-btn" id="darkToggle" title="Toggle Dark Mode"><i class="fa-solid fa-moon"></i></button>
+      <button class="h-btn" title="Minimize" onclick="minimizeWin()"><i class="fa-solid fa-minus"></i></button>
+      <button class="h-btn" title="Fullscreen" onclick="toggleFS()"><i class="fa-solid fa-expand"></i></button>
+    </div>
+  </header>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-header">Career Paths</div>
+    <div class="career-list" id="careerList"></div>
+    <div class="sidebar-footer">
+      <button class="restart-btn" onclick="restartConversation()">
+        <i class="fa-solid fa-rotate-left"></i> Restart Conversation
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== CHAT AREA ===== -->
+  <main class="chat-area">
+    <div class="messages" id="messages"></div>
+    <div class="input-area">
+      <form class="input-form" id="inputForm">
+        <input type="text" class="chat-input" id="chatInput" placeholder="Type your message..." autocomplete="off" />
+        <button type="submit" class="send-btn" id="sendBtn" aria-label="Send">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </form>
+      <p class="input-hint">Press Enter to send &nbsp;|&nbsp; Ctrl+R to restart &nbsp;|&nbsp; Ctrl+D for dark mode</p>
+    </div>
+  </main>
+</div>
+
+<!-- ===== CAREER DETAIL OVERLAY ===== -->
+<div class="detail-overlay" id="detailOverlay" onclick="closePanel(event)">
+  <div class="detail-panel" id="detailPanel">
+    <button class="close-panel" onclick="closeDetailPanel()"><i class="fa-solid fa-xmark"></i></button>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT — CHATBOT LOGIC (No Python / No Flask / No Backend)
+     ============================================================ -->
+<script>
+// ============================================================
+// CAREER DATABASE
+// ============================================================
+const CAREERS = {
+  ai: {
+    name: 'AI & Data Science', emoji: '🤖', color: '#10a37f',
+    desc: 'Build intelligent systems, train ML models, and extract insights from data.',
+    keywords: ['ai','machine learning','data','python','analytics','algorithm','statistics','ml','deep learning','neural','coding','code','programming','math'],
+    skills: ['Python','Machine Learning','Statistics','SQL','TensorFlow','Data Viz'],
+    salary: '₹6L – ₹25L / year',
+    roles: ['Data Scientist','ML Engineer','AI Researcher','Data Analyst','NLP Engineer'],
+    companies: ['Google','Microsoft','Amazon','IBM','OpenAI','NVIDIA'],
+    roadmap: ['Learn Python (3 months)','Study Statistics & Linear Algebra','Learn Scikit-learn & Pandas','Build 2-3 Kaggle projects','Get Google / IBM AI certification'],
+    why: 'Your interest in problem-solving and algorithms aligns perfectly with AI & Data Science. This field is growing at 35% per year!'
+  },
+  web: {
+    name: 'Web Development', emoji: '💻', color: '#3b82f6',
+    desc: 'Create beautiful, interactive websites and full-stack web applications.',
+    keywords: ['web','frontend','backend','html','css','javascript','design','ui','ux','website','react','node','full stack'],
+    skills: ['HTML/CSS','JavaScript','React.js','Node.js','MongoDB','REST APIs'],
+    salary: '₹4L – ₹18L / year',
+    roles: ['Frontend Developer','Backend Developer','Full-Stack Developer','UI/UX Developer'],
+    companies: ['Infosys','TCS','Wipro','Flipkart','Zomato','Swiggy'],
+    roadmap: ['Learn HTML & CSS (1 month)','Master JavaScript (2 months)','Learn React.js (2 months)','Learn Node.js + MongoDB','Build 3 full-stack projects & deploy'],
+    why: 'Your creative and technical interests make Web Development a great fit. Job demand is extremely high!'
+  },
+  cyber: {
+    name: 'Cyber Security', emoji: '🔒', color: '#8b5cf6',
+    desc: 'Protect systems, networks, and data from hackers and digital attacks.',
+    keywords: ['security','hacking','protection','defense','encryption','hack','network','firewall','cyber','ethical','threat','vulnerability'],
+    skills: ['Network Security','Ethical Hacking','Cryptography','Linux','Penetration Testing'],
+    salary: '₹5L – ₹22L / year',
+    roles: ['Security Analyst','Ethical Hacker','SOC Analyst','Security Architect','CISO'],
+    companies: ['Cisco','Palo Alto','KPMG','Deloitte','HCL','Wipro'],
+    roadmap: ['Learn Computer Networking basics','Master Linux OS','Learn ethical hacking tools','Get CEH / CompTIA Security+ certified','Practice on HackTheBox / TryHackMe'],
+    why: 'Cyber threats are rising 300% every year — security professionals are in massive demand!'
+  },
+  cloud: {
+    name: 'Cloud Computing', emoji: '☁️', color: '#0ea5e9',
+    desc: 'Design and manage scalable cloud infrastructure on AWS, Azure, or GCP.',
+    keywords: ['cloud','aws','azure','gcp','docker','kubernetes','devops','deployment','infrastructure','ci/cd','server','linux'],
+    skills: ['AWS / Azure / GCP','Docker','Kubernetes','Linux','CI/CD','Terraform'],
+    salary: '₹7L – ₹28L / year',
+    roles: ['Cloud Architect','DevOps Engineer','Cloud Engineer','Site Reliability Engineer'],
+    companies: ['Amazon','Microsoft','Google','Accenture','Capgemini','Infosys'],
+    roadmap: ['Learn Linux & Networking basics','Start with AWS Free Tier','Get AWS Solutions Architect certified','Learn Docker & Kubernetes','Build CI/CD pipeline project'],
+    why: '94% of enterprises use cloud services. Cloud engineers are some of the highest-paid in India!'
+  },
+  app: {
+    name: 'App Development', emoji: '📱', color: '#f59e0b',
+    desc: 'Build mobile applications for Android and iOS platforms.',
+    keywords: ['app','mobile','ios','android','flutter','react native','kotlin','swift','smartphone','play store'],
+    skills: ['Flutter / React Native','Kotlin / Swift','Firebase','REST APIs','UI/UX Design'],
+    salary: '₹4L – ₹20L / year',
+    roles: ['Android Developer','iOS Developer','Flutter Developer','Mobile Tech Lead'],
+    companies: ["BYJU'S",'Paytm','PhonePe','Ola','Dream11','MakeMyTrip'],
+    roadmap: ['Learn Flutter (easiest cross-platform)','Build 2-3 simple apps','Integrate Firebase & REST APIs','Publish on Google Play Store','Learn UI/UX basics for mobile'],
+    why: 'India has 750M+ smartphone users. Mobile app developers are in high demand!'
+  },
+  marketing: {
+    name: 'Digital Marketing', emoji: '📢', color: '#ef4444',
+    desc: 'Promote brands and products through SEO, social media, and online ads.',
+    keywords: ['marketing','seo','social media','advertising','content','campaign','branding','business','youtube','instagram','influencer','digital'],
+    skills: ['SEO / SEM','Google Ads','Social Media Marketing','Content Strategy','Google Analytics'],
+    salary: '₹3L – ₹15L / year',
+    roles: ['Digital Marketer','SEO Specialist','Content Manager','Social Media Manager','Growth Hacker'],
+    companies: ['Dentsu','WPP','Ogilvy','Publicis','Nykaa','Meesho'],
+    roadmap: ['Learn SEO fundamentals','Master Google Ads & Analytics','Build social media presence','Get Google Digital Marketing certified','Build a real campaign portfolio'],
+    why: 'Every business needs digital marketing. It\'s one of the most accessible and flexible tech careers!'
+  },
+};
+
+// ============================================================
+// CONVERSATION FLOW
+// ============================================================
+const FLOW = [
+  {
+    msg: '👋 Hello! Welcome to <b>AI Career Guidance Chatbot</b>!\n\nI\'m your personal career advisor. I\'ll help you find the perfect career path based on your interests and skills.\n\nLet\'s begin! 🚀',
+    opts: ['Start Career Quiz ✨', 'Show all careers 📋']
+  },
+  {
+    msg: '🎯 <b>Question 1 of 3</b>\n\nWhat topics excite you the most?\n\nTell me about your interests — feel free to type naturally!',
+    opts: ['Coding & Programming', 'Data & Analysis', 'Design & UI/UX', 'Security & Networking', 'Mobile Apps', 'Business & Marketing']
+  },
+  {
+    msg: '🛠️ <b>Question 2 of 3</b>\n\nWhat skills do you currently have or are learning?',
+    opts: ['Python / Machine Learning', 'JavaScript / Web Dev', 'Networking / Linux', 'Creative & Design tools', 'Excel / Analytics', 'I\'m a complete beginner']
+  },
+  {
+    msg: '💼 <b>Question 3 of 3 — Last one!</b>\n\nHow do you prefer to work?',
+    opts: ['Build & code software systems', 'Analyze data & solve problems', 'Create designs & creative content', 'Protect & secure systems', 'Communicate & promote to people']
+  },
+];
+
+// ============================================================
+// APP STATE
+// ============================================================
+let state = { step: 0, answers: [], busy: false, ranked: [], darkMode: false };
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  buildSidebar();
+  bindEvents();
+  restartConversation();
+});
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+function buildSidebar() {
+  const list = document.getElementById('careerList');
+  list.innerHTML = '';
+  Object.entries(CAREERS).forEach(([id, c]) => {
+    const item = document.createElement('div');
+    item.className = 'career-item';
+    item.dataset.id = id;
+    item.innerHTML = `
+      <span class="career-emoji">${c.emoji}</span>
+      <div class="career-info">
+        <div class="career-name">${c.name}</div>
+        <div class="career-salary">${c.salary}</div>
+      </div>`;
+    item.onclick = () => showCareerPanel(id);
+    list.appendChild(item);
+  });
+}
+
+function highlightSidebarItem(id) {
+  document.querySelectorAll('.career-item').forEach(el => el.classList.remove('active'));
+  const el = document.querySelector(`.career-item[data-id="${id}"]`);
+  if (el) el.classList.add('active');
+}
+
+// ============================================================
+// CHAT UTILITIES
+// ============================================================
+function getTime() {
+  return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+}
+
+function scrollToBottom() {
+  const msgs = document.getElementById('messages');
+  msgs.scrollTo({ top: msgs.scrollHeight, behavior: 'smooth' });
+}
+
+function removeQuickReplies() {
+  document.querySelectorAll('.quick-replies').forEach(el => el.remove());
+}
+
+function addUserMsg(text) {
+  removeQuickReplies();
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row user';
+  row.innerHTML = `
+    <div class="bubble-wrap">
+      <div class="bubble user-bubble">${escHtml(text)}</div>
+      <div class="msg-time">${getTime()}</div>
+    </div>
+    <div class="avatar user-av"><i class="fa-solid fa-user"></i></div>`;
+  msgs.appendChild(row);
+  scrollToBottom();
+}
+
+function addBotMsg(htmlContent, opts = [], extraEl = null) {
+  const msgs = document.getElementById('messages');
+  // Show typing
+  const typingRow = document.createElement('div');
+  typingRow.className = 'msg-row'; typingRow.id = 'typing-row';
+  typingRow.innerHTML = `
+    <div class="avatar bot-av"><i class="fa-solid fa-robot"></i></div>
+    <div class="bubble-wrap">
+      <div class="bubble bot-bubble">
+        <div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
+      </div>
+    </div>`;
+  msgs.appendChild(typingRow);
+  scrollToBottom();
+  state.busy = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  const delay = 600 + Math.random() * 600;
+  setTimeout(() => {
+    typingRow.remove();
+    const row = document.createElement('div');
+    row.className = 'msg-row';
+    row.innerHTML = `
+      <div class="avatar bot-av"><i class="fa-solid fa-robot"></i></div>
+      <div class="bubble-wrap">
+        <div class="bubble bot-bubble">${htmlContent}</div>
+        ${extraEl ? '' : `<div class="msg-time">${getTime()}</div>`}
+      </div>`;
+    // Inject extra element (career card) inside bubble-wrap
+    if (extraEl) {
+      const wrap = row.querySelector('.bubble-wrap');
+      wrap.appendChild(extraEl);
+      const ts = document.createElement('div');
+      ts.className = 'msg-time'; ts.textContent = getTime();
+      wrap.appendChild(ts);
+    }
+    msgs.appendChild(row);
+    // Quick replies
+    if (opts.length) {
+      const qr = document.createElement('div');
+      qr.className = 'quick-replies';
+      opts.forEach(o => {
+        const btn = document.createElement('button');
+        btn.className = 'qr-btn'; btn.textContent = o;
+        btn.onclick = () => handleInput(o);
+        qr.appendChild(btn);
+      });
+      msgs.appendChild(qr);
+    }
+    scrollToBottom();
+    state.busy = false;
+    document.getElementById('sendBtn').disabled = false;
+    document.getElementById('chatInput').focus();
+  }, delay);
+}
+
+function escHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ============================================================
+// CAREER ANALYSIS
+// ============================================================
+function analyzeCareer(answers) {
+  const combined = answers.join(' ').toLowerCase();
+  const scores = {};
+  for (const [id, c] of Object.entries(CAREERS)) {
+    scores[id] = 0;
+    for (const kw of c.keywords) if (combined.includes(kw)) scores[id] += 3;
+  }
+  return Object.entries(scores)
+    .sort((a, b) => b[1] - a[1])
+    .map(([id, score]) => ({ id, career: CAREERS[id], score }));
+}
+
+function buildCareerCard(ranked) {
+  const top = ranked[0];
+  const career = top.career;
+  const pct = Math.min(Math.round((top.score / 12) * 100) + 45, 97);
+
+  const card = document.createElement('div');
+  card.className = 'career-detail-card';
+  card.innerHTML = `
+    <div class="career-detail-title">${career.emoji} ${career.name}</div>
+    <div class="salary-pill">💰 ${career.salary}</div>
+
+    <div class="detail-section">
+      <div class="detail-label">Match Score</div>
+      <div class="score-wrap">
+        <div class="score-bar"><div class="score-fill" id="sf-main" style="width:0%"></div></div>
+        <div class="score-label" id="sf-label">0% match</div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-label">Why this career?</div>
+      <p style="font-size:13px;color:var(--text);line-height:1.6">${career.why}</p>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-label">Key Skills</div>
+      <div class="tag-wrap">
+        ${career.skills.map(s => `<span class="skill-tag">${s}</span>`).join('')}
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-label">🗺️ Roadmap to start</div>
+      ${career.roadmap.map((r, i) => `
+        <div class="roadmap-step">
+          <div class="step-num">${i + 1}</div>
+          <div class="step-text">${r}</div>
+        </div>`).join('')}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-label">Top Companies</div>
+      <div class="tag-wrap">
+        ${career.companies.map(c => `<span style="font-size:12px;padding:3px 8px;border-radius:6px;background:var(--bg);border:1px solid var(--border);color:var(--text-muted)">${c}</span>`).join('')}
+      </div>
+    </div>
+
+    <button onclick="showCareerPanel('${top.id}')" style="margin-top:12px;width:100%;padding:9px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">
+      View Full Details →
+    </button>`;
+
+  // Animate score bar after append
+  setTimeout(() => {
+    const sf = document.getElementById('sf-main');
+    const lb = document.getElementById('sf-label');
+    if (sf) { sf.style.width = pct + '%'; sf.style.background = career.color; }
+    if (lb) { lb.textContent = pct + '% match'; lb.style.color = career.color; }
+  }, 400);
+
+  return card;
+}
+
+// ============================================================
+// INPUT HANDLER
+// ============================================================
+function handleInput(text) {
+  if (!text || state.busy) return;
+  removeQuickReplies();
+  addUserMsg(text);
+
+  const newAnswers = [...state.answers, text.toLowerCase()];
+  state.answers = newAnswers;
+  const lower = text.toLowerCase();
+
+  // Special commands
+  if (lower.includes('restart') || lower.includes('start over') || lower.includes('reset')) {
+    setTimeout(() => restartConversation(), 300); return;
+  }
+  if (lower === 'show all careers 📋' || lower === 'show all careers') {
+    const list = Object.values(CAREERS).map(c => `${c.emoji} <b>${c.name}</b> — ${c.salary}`).join('<br>');
+    addBotMsg('Here are all 6 career paths I can guide you in:<br><br>' + list + '<br><br>Click any from the sidebar for full details!',
+      ['Start Career Quiz ✨']);
+    return;
+  }
+
+  // Find career by name mention
+  const foundId = Object.keys(CAREERS).find(id =>
+    lower.includes(CAREERS[id].name.toLowerCase()) || lower.includes(CAREERS[id].emoji)
+  );
+  if (foundId && state.step > FLOW.length) {
+    showCareerPanel(foundId); return;
+  }
+
+  const nextStep = state.step + 1;
+  state.step = nextStep;
+
+  if (nextStep < FLOW.length) {
+    const q = FLOW[nextStep];
+    const fmtMsg = q.msg.replace(/\n/g, '<br>');
+    addBotMsg(fmtMsg, q.opts);
+  } else if (nextStep === FLOW.length) {
+    // Analysis
+    state.ranked = analyzeCareer(newAnswers);
+    highlightSidebarItem(state.ranked[0].id);
+    const card = buildCareerCard(state.ranked);
+    addBotMsg(
+      '🎯 <b>Analysis complete!</b> Based on your answers, here\'s your top career match:',
+      ['Why this career? 🤔', 'See other options 📋', 'Restart 🔄'],
+      card
+    );
+  } else {
+    // Post-recommendation
+    if (lower.includes('why')) {
+      const c = state.ranked[0]?.career;
+      addBotMsg(`<b>Why ${c?.name || 'this career'} for you?</b><br><br>${c?.why || 'It matches your unique combination of interests and skills!'}`,
+        ['See other options 📋', 'Restart 🔄']);
+    } else if (lower.includes('other') || lower.includes('options')) {
+      const top3 = state.ranked.slice(0, 3).map((r, i) => {
+        const p = Math.min(Math.round((r.score / 12) * 100) + (45 - i * 10), 97 - i * 10);
+        return `${i + 1}. ${r.career.emoji} <b>${r.career.name}</b> — ${p}% match`;
+      }).join('<br>');
+      addBotMsg('Your top 3 career matches:<br><br>' + top3 + '<br><br>Click any from the sidebar for full details!',
+        ['Restart 🔄']);
+    } else {
+      addBotMsg('Need help? Try these options:', ['Why this career? 🤔', 'See other options 📋', 'Restart 🔄']);
+    }
+  }
+}
+
+// ============================================================
+// CAREER DETAIL OVERLAY PANEL
+// ============================================================
+function showCareerPanel(id) {
+  const c = CAREERS[id];
+  if (!c) return;
+  const pct = state.ranked.find(r => r.id === id)
+    ? Math.min(Math.round((state.ranked.find(r => r.id === id).score / 12) * 100) + 45, 97)
+    : 82;
+
+  document.getElementById('detailContent').innerHTML = `
+    <h2 style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px">${c.emoji} ${c.name}</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px">${c.desc}</p>
+
+    <div style="background:${c.color};color:#fff;padding:10px 16px;border-radius:10px;margin-bottom:14px">
+      <div style="font-size:11px;opacity:.8;margin-bottom:2px">Average Salary (India)</div>
+      <div style="font-size:18px;font-weight:700">${c.salary}</div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-label">Your match score</div>
+      <div class="score-bar"><div class="score-fill" id="sf-panel" style="width:0%;background:${c.color}"></div></div>
+      <div class="score-label" style="color:${c.color}">${pct}% match</div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-label">Why this career?</div>
+      <p style="font-size:13px;color:var(--text);line-height:1.6">${c.why}</p>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-label">Key Skills Required</div>
+      <div class="tag-wrap">${c.skills.map(s => `<span class="skill-tag">${s}</span>`).join('')}</div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-label">Job Roles</div>
+      ${c.roles.map(r => `<div style="font-size:13px;color:var(--text);padding:3px 0">• ${r}</div>`).join('')}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-label">Top Companies Hiring</div>
+      <div class="tag-wrap">${c.companies.map(co => `<span style="font-size:12px;padding:3px 10px;border-radius:6px;background:var(--bg);border:1px solid var(--border);color:var(--text-muted)">${co}</span>`).join('')}</div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-label">🗺️ How to start — Roadmap</div>
+      ${c.roadmap.map((r, i) => `<div class="roadmap-step"><div class="step-num" style="background:${c.color}">${i+1}</div><div class="step-text">${r}</div></div>`).join('')}
+    </div>`;
+
+  document.getElementById('detailOverlay').classList.add('open');
+  highlightSidebarItem(id);
+  setTimeout(() => {
+    const sf = document.getElementById('sf-panel');
+    if (sf) sf.style.width = pct + '%';
+  }, 300);
+}
+
+function closeDetailPanel() {
+  document.getElementById('detailOverlay').classList.remove('open');
+}
+function closePanel(e) {
+  if (e.target === document.getElementById('detailOverlay')) closeDetailPanel();
+}
+
+// ============================================================
+// RESTART
+// ============================================================
+function restartConversation() {
+  state = { step: 0, answers: [], busy: false, ranked: [], darkMode: state.darkMode };
+  document.getElementById('messages').innerHTML = '';
+  removeQuickReplies();
+  document.getElementById('sendBtn').disabled = false;
+  document.querySelectorAll('.career-item').forEach(el => el.classList.remove('active'));
+  const first = FLOW[0];
+  addBotMsg(first.msg.replace(/\n/g, '<br>'), first.opts);
+}
+
+// ============================================================
+// BIND EVENTS
+// ============================================================
+function bindEvents() {
+  // Form submit
+  document.getElementById('inputForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const inp = document.getElementById('chatInput');
+    const text = inp.value.trim();
+    inp.value = '';
+    handleInput(text);
+  });
+
+  // Dark mode toggle
+  document.getElementById('darkToggle').addEventListener('click', () => {
+    state.darkMode = !state.darkMode;
+    document.body.classList.toggle('dark', state.darkMode);
+    document.getElementById('darkToggle').innerHTML =
+      state.darkMode ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'r') { e.preventDefault(); restartConversation(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'd') { e.preventDefault(); document.getElementById('darkToggle').click(); }
+    if (e.key === 'Escape') closeDetailPanel();
+  });
+}
+
+// ============================================================
+// ELECTRON WINDOW CONTROLS (works only inside Electron)
+// ============================================================
+function minimizeWin() {
+  if (window.electronAPI) window.electronAPI.openExternal(''); // placeholder
+}
+function toggleFS() {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen();
+}
+</script>
+</body>
+</html>
